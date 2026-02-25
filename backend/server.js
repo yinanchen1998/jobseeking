@@ -9,6 +9,29 @@ import { fileURLToPath } from 'url';
 // 加载环境变量
 dotenv.config();
 
+// 导入服务
+import { RedisService } from './services/redisService.js';
+import { AliyunSMSService } from './services/smsService.js';
+import { AuthService } from './services/authService.js';
+
+// 初始化服务
+const redisService = new RedisService();
+
+// 初始化阿里云短信服务（如果有配置）
+let smsService = null;
+if (process.env.ALIYUN_ACCESS_KEY_ID && process.env.ALIYUN_ACCESS_KEY_SECRET) {
+  smsService = new AliyunSMSService(
+    process.env.ALIYUN_ACCESS_KEY_ID,
+    process.env.ALIYUN_ACCESS_KEY_SECRET
+  );
+  console.log('[SMS] 阿里云短信服务已初始化');
+} else {
+  console.log('[SMS] 阿里云短信服务未配置，使用开发模式');
+}
+
+// 初始化认证服务
+const authService = new AuthService(smsService, redisService);
+
 // 获取当前目录
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -92,7 +115,13 @@ const KIMI_API_KEY = process.env.KIMI_API_KEY || '';
 const KIMI_API_URL = 'https://api.moonshot.cn/v1/chat/completions';
 
 // 中间件
-app.use(cors());
+const corsOptions = {
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // 从 GitHub URL 提取 owner 和 repo
@@ -212,8 +241,80 @@ app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     kimiConfigured: !!KIMI_API_KEY,
-    kimiKeyPrefix: KIMI_API_KEY ? KIMI_API_KEY.substring(0, 10) + '...' : null
+    kimiKeyPrefix: KIMI_API_KEY ? KIMI_API_KEY.substring(0, 10) + '...' : null,
+    redisConnected: redisService.isConnected(),
+    smsConfigured: !!smsService
   });
+});
+
+// ============ 用户认证 API ============
+
+// 发送验证码
+app.post('/api/auth/send-code', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({ success: false, message: '请提供手机号' });
+    }
+    
+    const result = await authService.sendCode(phone);
+    res.json(result);
+  } catch (error) {
+    console.error('发送验证码失败:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+});
+
+// 验证码登录
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { phone, code } = req.body;
+    
+    if (!phone || !code) {
+      return res.status(400).json({ success: false, message: '请提供手机号和验证码' });
+    }
+    
+    const result = await authService.verifyCode(phone, code);
+    res.json(result);
+  } catch (error) {
+    console.error('登录失败:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+});
+
+// 退出登录
+app.post('/api/auth/logout', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (token) {
+      await authService.logout(token);
+    }
+    res.json({ success: true, message: '已退出登录' });
+  } catch (error) {
+    console.error('退出登录失败:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
+});
+
+// 获取当前用户信息
+app.get('/api/auth/me', async (req, res) => {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ success: false, message: '未登录' });
+    }
+    
+    const user = await authService.validateToken(token);
+    if (!user) {
+      return res.status(401).json({ success: false, message: '登录已过期' });
+    }
+    
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+    res.status(500).json({ success: false, message: '服务器错误' });
+  }
 });
 
 // 测试 Kimi API 连接
@@ -1523,12 +1624,15 @@ app.listen(PORT, () => {
   const discoveredTools = loadDiscoveredTools();
   console.log(`🚀 后端服务运行在 http://localhost:${PORT}`);
   console.log(`🔑 Kimi API ${KIMI_API_KEY ? '已配置' : '未配置'}`);
+  console.log(`📱 阿里云短信 ${smsService ? '已配置' : '未配置（开发模式）'}`);
+  console.log(`💾 Redis ${redisService.isConnected() ? '已连接' : '未连接'}`);
   console.log(`📦 已发现工具库: ${discoveredTools.length} 个`);
   console.log('');
   console.log('📖 使用说明：');
   console.log('   1. 设置环境变量 KIMI_API_KEY=your_api_key');
-  console.log('   2. 前端搜索时将调用 POST /api/search');
-  console.log('   3. 新工具会自动保存到 discovered-tools.json');
-  console.log('   4. 工具库会不断增长！');
+  console.log('   2. 配置阿里云短信: ALIYUN_ACCESS_KEY_ID, ALIYUN_ACCESS_KEY_SECRET');
+  console.log('   3. 配置Redis: REDIS_HOST, REDIS_PORT（可选）');
+  console.log('   4. 前端搜索时将调用 POST /api/search');
+  console.log('   5. 用户认证: POST /api/auth/send-code, POST /api/auth/login');
   console.log('');
 });
