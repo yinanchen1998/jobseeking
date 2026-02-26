@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,10 +41,12 @@ export function ResearchReport({ tool, trigger }: ResearchReportProps) {
 
   // 本地状态存储报告（当从外部获取已有报告时使用）
   const [localResearch, setLocalResearch] = useState<ProductResearch | null>(null);
+  const hasCheckedRef = useRef(false);
 
   // 打开对话框时检查是否有已有报告
   useEffect(() => {
-    if (open && !research && !isLoading && !task && !localResearch) {
+    if (open && !research && !isLoading && !task && !localResearch && !hasCheckedRef.current) {
+      hasCheckedRef.current = true;
       getResearch(tool.id).then(existing => {
         if (existing) {
           // 有已有报告，使用本地状态存储
@@ -55,7 +57,15 @@ export function ResearchReport({ tool, trigger }: ResearchReportProps) {
         }
       });
     }
-  }, [open, tool, getResearch, research, isLoading, task, submitResearchTask, localResearch]);
+  }, [open]); // 只在打开时检查一次
+
+  // 关闭时重置
+  useEffect(() => {
+    if (!open) {
+      setLocalResearch(null);
+      hasCheckedRef.current = false;
+    }
+  }, [open]);
 
   // 关闭时重置本地状态
   useEffect(() => {
