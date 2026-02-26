@@ -1083,23 +1083,43 @@ function loadAllResearch() {
   }
 }
 
+// 删除调研报告
+app.delete('/api/research/:toolId', (req, res) => {
+  try {
+    const { toolId } = req.params;
+    const researchPath = path.join(RESEARCH_DIR, `${toolId}.json`);
+    
+    if (fs.existsSync(researchPath)) {
+      fs.unlinkSync(researchPath);
+      console.log(`[API] 删除调研报告: ${toolId}`);
+    }
+    
+    res.json({ success: true, message: '调研报告已删除' });
+  } catch (error) {
+    console.error('删除调研报告失败:', error);
+    res.status(500).json({ error: '删除失败' });
+  }
+});
+
 // 提交后台调研任务
 app.post('/api/research-product', async (req, res) => {
   try {
-    const { tool } = req.body;
+    const { tool, force = false } = req.body;
     
     if (!tool || !tool.name) {
       return res.status(400).json({ error: '工具信息不能为空' });
     }
     
-    // 检查是否已有调研报告
-    const existingResearch = loadResearch(tool.id);
-    if (existingResearch) {
-      return res.json({
-        success: true,
-        research: existingResearch,
-        cached: true
-      });
+    // 检查是否已有调研报告（非强制模式）
+    if (!force) {
+      const existingResearch = loadResearch(tool.id);
+      if (existingResearch) {
+        return res.json({
+          success: true,
+          research: existingResearch,
+          cached: true
+        });
+      }
     }
     
     // 检查是否已有进行中的任务

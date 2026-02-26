@@ -105,8 +105,21 @@ export function useProductResearch() {
     }, 2000); // 每2秒查询一次
   }, [checkTaskStatus, clearPoll]);
 
+  // 删除调研报告
+  const deleteResearch = useCallback(async (toolId: string): Promise<boolean> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/research/${toolId}`, {
+        method: 'DELETE'
+      });
+      return response.ok;
+    } catch (error) {
+      console.error('删除调研报告失败:', error);
+      return false;
+    }
+  }, []);
+
   // 提交调研任务
-  const submitResearchTask = useCallback(async (tool: AITool): Promise<ResearchTask | null> => {
+  const submitResearchTask = useCallback(async (tool: AITool, force: boolean = false): Promise<ResearchTask | null> => {
     setState(prev => ({ 
       ...prev, 
       isLoading: true, 
@@ -115,23 +128,25 @@ export function useProductResearch() {
     }));
     
     try {
-      // 先检查是否已有报告
-      const existingResearch = await getResearch(tool.id);
-      if (existingResearch) {
-        setState({
-          isLoading: false,
-          research: existingResearch,
-          error: null,
-          task: null
-        });
-        return null; // 已有报告，不需要任务
+      // 先检查是否已有报告（非强制模式）
+      if (!force) {
+        const existingResearch = await getResearch(tool.id);
+        if (existingResearch) {
+          setState({
+            isLoading: false,
+            research: existingResearch,
+            error: null,
+            task: null
+          });
+          return null; // 已有报告，不需要任务
+        }
       }
       
       // 提交任务
       const response = await fetch(`${API_BASE_URL}/api/research-product`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tool })
+        body: JSON.stringify({ tool, force })
       });
 
       if (!response.ok) {
@@ -247,6 +262,7 @@ export function useProductResearch() {
     ...state,
     submitResearchTask,
     cancelResearch,
+    deleteResearch,
     getResearch,
     getAllResearch,
     generateSummary,

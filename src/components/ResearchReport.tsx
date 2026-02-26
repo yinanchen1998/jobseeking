@@ -32,6 +32,7 @@ export function ResearchReport({ tool, trigger }: ResearchReportProps) {
   const { 
     submitResearchTask, 
     cancelResearch,
+    deleteResearch,
     getResearch, 
     isLoading, 
     research, 
@@ -41,6 +42,7 @@ export function ResearchReport({ tool, trigger }: ResearchReportProps) {
 
   // 本地状态存储报告（当从外部获取已有报告时使用）
   const [localResearch, setLocalResearch] = useState<ProductResearch | null>(null);
+  const [loadingRestart, setLoadingRestart] = useState(false);
   const hasCheckedRef = useRef(false);
 
   // 打开对话框时检查是否有已有报告
@@ -91,10 +93,20 @@ export function ResearchReport({ tool, trigger }: ResearchReportProps) {
 
   const handleRestartResearch = async () => {
     if (window.confirm('确定要重新调研吗？这将覆盖现有的调研报告。')) {
-      // 清除本地报告状态
-      setLocalResearch(null);
-      // 重新开始调研
-      await submitResearchTask(tool);
+      setLoadingRestart(true);
+      try {
+        // 先删除服务器上的旧报告
+        await deleteResearch(tool.id);
+        // 清除本地报告状态
+        setLocalResearch(null);
+        hasCheckedRef.current = false;
+        // 强制重新开始调研
+        await submitResearchTask(tool, true);
+      } catch (error) {
+        console.error('重新调研失败:', error);
+      } finally {
+        setLoadingRestart(false);
+      }
     }
   };
 
