@@ -2,7 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import type { AITool } from '@/types';
 import type { ProductResearch, ResearchSummary } from '@/types/research';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '@/config/api';
 
 interface ResearchTask {
   taskId: string;

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+import { API_BASE_URL } from '@/config/api';
 
 // 标记失效的 GitHub 链接
 async function markGitHubDead(url: string) {
