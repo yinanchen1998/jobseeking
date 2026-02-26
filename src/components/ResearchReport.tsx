@@ -207,11 +207,16 @@ export function ResearchReport({ tool, trigger }: ResearchReportProps) {
           variant="outline"
           size="sm"
           onClick={handleRestartResearch}
+          disabled={loadingRestart || isLoading}
           className="gap-1 text-orange-600 border-orange-200 hover:bg-orange-50"
           title="重新调研会覆盖当前报告"
         >
-          <RefreshCw className="w-4 h-4" />
-          重新调研
+          {loadingRestart ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <RefreshCw className="w-4 h-4" />
+          )}
+          {loadingRestart ? '重新调研中...' : '重新调研'}
         </Button>
       </div>
 

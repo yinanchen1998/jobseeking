@@ -479,8 +479,60 @@ app.post('/api/search', async (req, res) => {
       });
     }
 
-    // 简化 Prompt，提高响应速度
-    const prompt = `搜索词："${query}"
+    // 判断搜索类型：产品名 vs 需求词
+    function detectSearchType(query) {
+      const productPatterns = [
+        /[A-Z][a-z]+[A-Z]/,
+        /[a-z]+[A-Z][a-z]+/,
+        /^(ChatGPT|OpenAI|Claude|Midjourney|Notion|Linear|Figma|Canva|Grammarly)/i,
+        /\b(AI|GPT|API|SaaS|App|Bot|Tool|Pro|Max|Plus|Mini)\b/i,
+      ];
+      const needPatterns = [
+        /(简历|求职|面试|工作|招聘|职业规划|技能|提升|优化|生成|制作|准备)/,
+        /(如何|怎么|什么|推荐|有哪些|好用的)/,
+      ];
+      const isProduct = productPatterns.some(p => p.test(query));
+      const isNeed = needPatterns.some(p => p.test(query));
+      if (isProduct && !isNeed) return 'product';
+      if (isNeed && !isProduct) return 'need';
+      if (query.length < 20 && !query.includes(' ')) return 'product';
+      return 'need';
+    }
+
+    const searchType = detectSearchType(query);
+    console.log(`[Search] 类型: ${searchType}, 查询: "${query}"`);
+
+    let prompt;
+    
+    if (searchType === 'product') {
+      prompt = `搜索特定产品："${query}"
+
+请专门搜索这个产品/工具的官方信息，返回该产品的：
+1. 官网链接（必须真实存在）
+2. GitHub仓库链接（如果是开源项目）
+3. 产品的准确英文名称、中文名称
+4. 主要功能和特点描述
+
+只搜索 "${query}" 这个特定产品，不要推荐其他产品。
+
+返回JSON数组格式（1-2个结果，优先官网）：
+[{
+  "name": "英文名称",
+  "chineseName": "中文名称",
+  "tagline": "一句话描述",
+  "description": "详细功能描述",
+  "category": "类别(resume/interview/career/skill/matching/other)",
+  "website": "官网URL",
+  "source": "来源(producthunt/github/website/app/extension)"
+}]
+
+要求：
+1. 只返回这个特定产品的信息
+2. 官网链接必须是真实有效的
+3. 优先返回官网，其次GitHub
+4. 只返回JSON数组`;
+    } else {
+      prompt = `搜索词："${query}"
 
 请推荐3-5个与求职相关的AI工具或开源项目，必须包含至少1个GitHub开源项目。
 
@@ -500,6 +552,7 @@ app.post('/api/search', async (req, res) => {
 2. 必须包含GitHub开源项目
 3. 来源多样化
 4. 只返回JSON数组`;
+    }
 
     const response = await fetch(KIMI_API_URL, {
       method: 'POST',
