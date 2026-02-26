@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Search, Filter, Grid3X3, List, Star, Eye, ArrowRight, X, Loader2, Sparkles, CheckCircle2, AlertCircle, ExternalLink, Database, FileText } from 'lucide-react';
+import { Search, Filter, Grid3X3, List, Star, ArrowRight, X, Loader2, Sparkles, CheckCircle2, AlertCircle, ExternalLink, Database, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -668,7 +668,7 @@ const GitHubStarsBadge = ({ url }: { url: string }) => {
 };
 
 // 替代项目标记组件
-const AlternativeBadge = ({ replaces }: { replaces?: string }) => (
+const AlternativeBadge = ({ _replaces }: { _replaces?: string }) => (
   <Badge className="bg-purple-100 text-purple-700 text-xs flex-shrink-0">
     🔄 智能替代
   </Badge>
@@ -705,7 +705,7 @@ const ToolGridCard = ({ tool }: { tool: AITool }) => {
                   </Badge>
                 )}
                 {isAlternative && (
-                  <AlternativeBadge replaces={(tool as any).replaces} />
+                  <AlternativeBadge _replaces={(tool as any).replaces} />
                 )}
               </div>
               <p className="text-sm text-gray-500">{tool.name}</p>
@@ -865,7 +865,7 @@ const ToolListCard = ({ tool }: { tool: AITool }) => {
                 </Badge>
               )}
               {isAlternative && (
-                <AlternativeBadge replaces={(tool as any).replaces} />
+                <AlternativeBadge _replaces={(tool as any).replaces} />
               )}
               {isGitHub ? (
                 <GitHubStarsListBadge url={tool.website} />

@@ -46,7 +46,7 @@ export const searchIndex: Record<string, string[]> = {
 // 合并所有工具（基础工具 + 发现的工具）
 export function getAllTools(): AITool[] {
   // 动态导入 mockTools 避免循环依赖
-  const { mockTools } = require('./mockData');
+  import { mockTools } from './mockData';
   return [...mockTools, ...discoveredTools];
 }
 

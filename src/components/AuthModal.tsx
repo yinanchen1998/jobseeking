@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Phone, Lock, LogOut, User } from 'lucide-react';
+import { Loader2, Phone, Lock, LogOut, User as UserIcon } from 'lucide-react';
 import { sendCode, login, logout, getCurrentUser, type User } from '@/services/auth';
 import { toast } from 'sonner';
 
@@ -108,7 +108,7 @@ export function AuthModal({ open, onOpenChange, onLogin }: AuthModalProps) {
           <div className="space-y-4 py-4">
             <div className="flex items-center justify-center">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                <User className="w-8 h-8 text-white" />
+                <UserIcon className="w-8 h-8 text-white" />
               </div>
             </div>
             <div className="text-center">

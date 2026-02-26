@@ -229,7 +229,7 @@ export const mockTools: AITool[] = [
     category: 'interview',
     status: 'published',
     content: {
-      founderAddress: '由叶向宇于2014年创立',
+      // founderAddress removed to match type
       problemSolved: [
         '找不到目标公司的笔试面试题',
         '缺乏真实的面试环境练习',

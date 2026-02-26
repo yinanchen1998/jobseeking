@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FileText, Calendar, ArrowRight, Loader2, TrendingUp, Star, Target } from 'lucide-react';
+import { FileText, Calendar, ArrowRight, Loader2, Star, Target } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ResearchReport } from '@/components/ResearchReport';
 import { useProductResearch } from '@/hooks/useProductResearch';
@@ -153,7 +153,7 @@ export default function ResearchHistory() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {new Set(researchList.map(r => r.category)).size}
+                    {new Set(researchList.map(r => r.category || 'unknown')).size}
                   </p>
                   <p className="text-sm text-gray-500">覆盖类别</p>
                 </div>
