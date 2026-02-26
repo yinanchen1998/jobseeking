@@ -1,0 +1,119 @@
+import express from 'express';
+import cors from 'cors';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
+dotenv.config();
+
+const KIMI_API_KEY = process.env.KIMI_API_KEY;
+const KIMI_API_URL = 'https://api.moonshot.cn/v1/chat/completions';
+
+// Google 搜索函数
+async function searchGoogle(query, timeout = 35000) {
+  try {
+    const proxyUrl = process.env.HTTP_PROXY || process.env.HTTPS_PROXY;
+    console.log(`[Google] 开始搜索: "${query}"`);
+    
+    const searchQuery = query.includes('求职') ? query : `${query} job search AI`;
+    const cliPath = '/root/jobseeking/lib/google-search/dist/src/index.js';
+    const cmd = `node "${cliPath}" --limit 5 --timeout ${timeout} --state-file ./browser-state.json '-- "${searchQuery}"'`;
+    
+    const { stdout } = await execAsync(cmd, {
+      cwd: '/root/jobseeking/backend',
+      env: { ...process.env, HTTP_PROXY: proxyUrl, HTTPS_PROXY: proxyUrl },
+      timeout: timeout + 5000
+    });
+    
+    const results = JSON.parse(stdout);
+    if (!results?.results?.length) return null;
+    
+    return results.results.map(r => ({
+      title: r.title,
+      link: r.link,
+      snippet: r.snippet,
+      source: r.link?.includes('github.com') ? 'google_github' : 'google'
+    }));
+  } catch (error) {
+    console.error('[Google] 错误:', error.message);
+    return null;
+  }
+}
+
+async function fetchWithTimeout(url, options = {}, timeout = 15000) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error) {
+    clearTimeout(timeoutId);
+    throw error;
+  }
+}
+
+function detectSearchType(query) {
+  const productPatterns = [/[A-Z][a-z]+[A-Z]/, /[a-z]+[A-Z][a-z]+/, /^(ChatGPT|OpenAI|Claude)/i];
+  const needPatterns = [/(简历|求职|面试|工作|招聘)/, /(如何|怎么|推荐)/];
+  const isProduct = productPatterns.some(p => p.test(query));
+  const isNeed = needPatterns.some(p => p.test(query));
+  if (isProduct && !isNeed) return 'product';
+  if (isNeed && !isProduct) return 'need';
+  return query.length < 20 ? 'product' : 'need';
+}
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+app.post('/api/search', async (req, res) => {
+  const { query } = req.body;
+  if (!query?.trim()) return res.status(400).json({ error: '搜索词不能为空' });
+  if (!KIMI_API_KEY) return res.status(500).json({ error: 'Kimi API Key 未配置' });
+
+  const responseTimeout = setTimeout(() => {
+    if (!res.headersSent) res.status(504).json({ error: '搜索超时' });
+  }, 70000);
+
+  try {
+    const searchType = detectSearchType(query);
+    console.log(`[Search] 类型: ${searchType}, 查询: "${query}"`);
+
+    const googlePromise = searchGoogle(query + ' 求职工具', 35000).catch(() => null);
+    
+    const prompt = searchType === 'product' 
+      ? `搜索产品："${query}"，返回JSON数组：[{name, chineseName, tagline, description, category, website, source}]`
+      : `搜索："${query}"，推荐3-5个求职AI工具，返回JSON数组：[{name, chineseName, tagline, description, category, website, source}]`;
+
+    const kimiPromise = fetchWithTimeout(KIMI_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KIMI_API_KEY}` },
+      body: JSON.stringify({ model: 'moonshot-v1-8k', messages: [{ role: 'system', content: '你是求职工具搜索专家。只返回JSON数组。' }, { role: 'user', content: prompt }], temperature: 0.3 })
+    }, 25000).then(r => r.ok ? r.json() : null).then(d => d?.choices?.[0]?.message?.content || '').catch(() => '');
+
+    const [googleResults, kimiContent] = await Promise.all([googlePromise, kimiPromise]);
+    console.log(`[Search] Google: ${googleResults?.length || 0}个, Kimi: ${kimiContent ? '有' : '无'}`);
+
+    let kimiResults = [];
+    if (kimiContent) {
+      try { kimiResults = JSON.parse(kimiContent.replace(/```json\s*/g, '').replace(/```\s*$/g, '').trim()); } catch (e) {}
+    }
+
+    let finalResults = [];
+    if (googleResults?.length) {
+      googleResults.forEach(g => finalResults.push({ name: g.title?.split(' - ')[0] || 'Unknown', chineseName: g.title?.split(' - ')[0] || 'Unknown', tagline: g.snippet?.substring(0, 50) + '...', description: g.snippet, category: 'other', website: g.link, source: g.source, linkStatus: { valid: false, checked: false } }));
+    }
+    kimiResults.forEach(k => { if (!finalResults.some(f => f.website === k.website)) finalResults.push({ ...k, linkStatus: { valid: false, checked: false } }); });
+
+    clearTimeout(responseTimeout);
+    res.json({ query, searchType, googleCount: googleResults?.length || 0, kimiCount: kimiResults.length, results: finalResults.slice(0, 5), sources: { google: !!googleResults?.length, kimi: !!kimiResults.length } });
+  } catch (error) {
+    clearTimeout(responseTimeout);
+    res.status(500).json({ error: '搜索服务出错', message: error.message });
+  }
+});
+
+app.listen(3001, () => console.log('🚀 后端运行在 http://localhost:3001'));

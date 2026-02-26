@@ -1,0 +1,184 @@
+import express from 'express';
+import cors from 'cors';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
+
+const KIMI_API_KEY = process.env.KIMI_API_KEY || '';
+const KIMI_API_URL = 'https://api.moonshot.cn/v1/chat/completions';
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// ========== Bing 搜索 ==========
+async function searchBing(query, limit = 5) {
+  try {
+    console.log(`[Bing] 搜索: "${query}"`);
+    const url = `https://cn.bing.com/search?q=${encodeURIComponent(query)}&count=${limit}`;
+    
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+    });
+    
+    const html = await response.text();
+    const results = [];
+    let start = 0;
+    
+    for (let i = 0; i < limit; i++) {
+      const li = html.indexOf('<li class="b_algo"', start);
+      if (li === -1) break;
+      const liEnd = html.indexOf('</li>', li);
+      const block = html.substring(li, liEnd);
+      
+      const href = block.indexOf('href="');
+      if (href === -1) continue;
+      const hrefEnd = block.indexOf('"', href + 6);
+      const link = block.substring(href + 6, hrefEnd);
+      
+      const tit = block.indexOf('>', hrefEnd);
+      const titEnd = block.indexOf('</a>', tit);
+      let title = block.substring(tit + 1, titEnd).replace(/<[^>]+>/g, '').trim();
+      
+      if (title && link) {
+        results.push({
+          title,
+          link: link.startsWith('http') ? link : `https://cn.bing.com${link}`,
+          snippet: '',
+          source: link.includes('github.com') ? 'bing_github' : 'bing'
+        });
+      }
+      start = liEnd;
+    }
+    
+    console.log(`[Bing] 找到 ${results.length} 个结果`);
+    return results.length > 0 ? results : null;
+  } catch (e) {
+    console.error('[Bing] 错误:', e.message);
+    return null;
+  }
+}
+
+// ========== 搜索 API ==========
+app.post('/api/search', async (req, res) => {
+  const { query } = req.body;
+  if (!query?.trim()) return res.status(400).json({ error: '搜索词不能为空' });
+  if (!KIMI_API_KEY) return res.status(500).json({ error: 'Kimi API Key 未配置' });
+
+  const responseTimeout = setTimeout(() => {
+    if (!res.headersSent) res.status(504).json({ error: '搜索超时' });
+  }, 70000);
+
+  try {
+    const searchType = query.match(/[A-Z]/) && !query.match(/[\u4e00-\u9fa5]/) ? 'product' : 'need';
+    console.log(`[Search] 类型: ${searchType}, 查询: "${query}"`);
+
+    // Bing 搜索
+    const bingPromise = searchBing(query, 5).catch(() => null);
+
+    // Kimi 搜索
+    const prompt = searchType === 'product'
+      ? `搜索产品："${query}"，返回JSON：[{name, chineseName, tagline, description, category, website, source}]`
+      : `搜索："${query}"，推荐3-5个求职AI工具，返回JSON数组`;
+
+    const kimiPromise = fetch(KIMI_API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KIMI_API_KEY}` },
+      body: JSON.stringify({ model: 'moonshot-v1-8k', messages: [{role: 'user', content: prompt}], temperature: 0.3 })
+    }).then(r => r.json()).then(d => d.choices?.[0]?.message?.content || '').catch(() => '');
+
+    const [bingResults, kimiContent] = await Promise.all([bingPromise, kimiPromise]);
+
+    let kimiResults = [];
+    if (kimiContent) {
+      try { kimiResults = JSON.parse(kimiContent.replace(/```json\s*/g, '').replace(/```\s*$/g, '').trim()); } catch (e) {}
+    }
+
+    // 合并
+    let finalResults = [];
+    if (bingResults?.length) {
+      bingResults.forEach(g => finalResults.push({
+        name: g.title?.substring(0, 50) || 'Unknown',
+        chineseName: g.title?.substring(0, 50) || 'Unknown',
+        tagline: '',
+        description: '',
+        category: 'other',
+        website: g.link,
+        source: 'bing'
+      }));
+    }
+
+    kimiResults.forEach(k => {
+      if (!finalResults.some(f => f.website === k.website)) finalResults.push(k);
+    });
+
+    clearTimeout(responseTimeout);
+    res.json({
+      query,
+      searchType,
+      bingCount: bingResults?.length || 0,
+      kimiCount: kimiResults.length,
+      results: finalResults.slice(0, 5),
+      sources: { bing: !!bingResults?.length, kimi: !!kimiResults.length }
+    });
+  } catch (error) {
+    clearTimeout(responseTimeout);
+    res.status(500).json({ error: '搜索服务出错' });
+  }
+});
+
+// ========== Research API ==========
+const researchTasks = new Map();
+
+app.post('/api/research', async (req, res) => {
+  const { toolId, toolName } = req.body;
+  if (!toolId || !toolName) return res.status(400).json({ error: '缺少参数' });
+
+  const taskId = Date.now().toString();
+  
+  setTimeout(async () => {
+    try {
+      const prompt = `为"${toolName}"生成产品调研报告，返回JSON：{summary, details, pros[], cons[], pricing, rating}`;
+      const response = await fetch(KIMI_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${KIMI_API_KEY}` },
+        body: JSON.stringify({ model: 'moonshot-v1-8k', messages: [{role: 'user', content: prompt}] })
+      });
+      const data = await response.json();
+      const content = data.choices?.[0]?.message?.content || '';
+      
+      let report;
+      try { report = JSON.parse(content.match(/\{[\s\S]*\}/)[0]); } catch(e) { report = {summary: toolName, details: content}; }
+      
+      researchTasks.set(taskId, { status: 'completed', toolId, toolName, report });
+    } catch (error) {
+      researchTasks.set(taskId, { status: 'failed', error: error.message });
+    }
+  }, 100);
+  
+  res.json({ taskId, status: 'pending' });
+});
+
+app.get('/api/research/:taskId', (req, res) => {
+  const task = researchTasks.get(req.params.taskId);
+  if (!task) return res.status(404).json({ error: '任务不存在' });
+  res.json(task);
+});
+
+app.delete('/api/research/:toolId', (req, res) => {
+  for (const [taskId, task] of researchTasks.entries()) {
+    if (task.toolId === req.params.toolId) researchTasks.delete(taskId);
+  }
+  res.json({ success: true });
+});
+
+// 启动
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`🚀 后端运行在 http://localhost:${PORT}`));
