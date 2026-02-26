@@ -669,7 +669,7 @@ const GitHubStarsBadge = ({ url }: { url: string }) => {
 
 // 替代项目标记组件
 const AlternativeBadge = ({ _replaces }: { _replaces?: string }) => (
-  <Badge className="bg-purple-100 text-purple-700 text-xs flex-shrink-0">
+  <Badge title={_replaces} className="bg-purple-100 text-purple-700 text-xs flex-shrink-0">
     🔄 智能替代
   </Badge>
 );

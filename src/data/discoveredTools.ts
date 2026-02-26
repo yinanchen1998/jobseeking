@@ -44,15 +44,15 @@ export const searchIndex: Record<string, string[]> = {
 };
 
 // 合并所有工具（基础工具 + 发现的工具）
-export function getAllTools(): AITool[] {
+export async function getAllTools(): Promise<AITool[]> {
   // 动态导入 mockTools 避免循环依赖
-  import { mockTools } from './mockData';
+  const { mockTools } = await import('./mockData');
   return [...mockTools, ...discoveredTools];
 }
 
 // 根据关键词查找已发现的工具
-export function findToolsByKeyword(keyword: string): AITool[] {
-  const allTools = getAllTools();
+export async function findToolsByKeyword(keyword: string): Promise<AITool[]> {
+  const allTools = await getAllTools();
   const normalizedKeyword = keyword.toLowerCase();
   
   return allTools.filter(tool => {
@@ -62,8 +62,8 @@ export function findToolsByKeyword(keyword: string): AITool[] {
 }
 
 // 检查工具是否已存在（通过 slug 或 website）
-export function isToolExists(slug: string, website: string): boolean {
-  const allTools = getAllTools();
+export async function isToolExists(slug: string, website: string): Promise<boolean> {
+  const allTools = await getAllTools();
   return allTools.some(tool => 
     tool.slug === slug || 
     tool.website === website ||

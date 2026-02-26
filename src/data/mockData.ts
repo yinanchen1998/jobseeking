@@ -229,7 +229,7 @@ export const mockTools: AITool[] = [
     category: 'interview',
     status: 'published',
     content: {
-      // founderAddress removed to match type
+      founderBackground: '由牛客网团队创立，专注程序员求职领域',
       problemSolved: [
         '找不到目标公司的笔试面试题',
         '缺乏真实的面试环境练习',

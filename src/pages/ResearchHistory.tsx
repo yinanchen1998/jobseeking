@@ -153,7 +153,7 @@ export default function ResearchHistory() {
                 </div>
                 <div>
                   <p className="text-2xl font-bold">
-                    {new Set(researchList.map(r => r.category || 'unknown')).size}
+                    {new Set(researchList.map(r => (r as any).category || 'unknown')).size}
                   </p>
                   <p className="text-sm text-gray-500">覆盖类别</p>
                 </div>
