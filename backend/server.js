@@ -137,9 +137,46 @@ function parseGitHubUrl(url) {
   return null;
 }
 
-// 获取 GitHub 项目 stars
-async function getGitHubStars(owner, repo) {
+// 缓存时间：24小时
+const GITHUB_CACHE_TTL = 86400;
+
+// 从 Redis 获取缓存的 GitHub stars
+async function getCachedGitHubStars(owner, repo) {
+  const cacheKey = `github:stars:${owner}:${repo}`;
   try {
+    const cached = await redisService.get(cacheKey);
+    if (cached) {
+      console.log(`[GitHub] ✅ 缓存命中: ${owner}/${repo}`);
+      return JSON.parse(cached);
+    }
+  } catch (e) {
+    console.log(`[GitHub] 缓存读取失败: ${e.message}`);
+  }
+  return null;
+}
+
+// 保存 GitHub stars 到 Redis
+async function setCachedGitHubStars(owner, repo, data) {
+  const cacheKey = `github:stars:${owner}:${repo}`;
+  try {
+    await redisService.set(cacheKey, JSON.stringify(data), GITHUB_CACHE_TTL);
+    console.log(`[GitHub] 💾 已缓存: ${owner}/${repo} (24h)`);
+  } catch (e) {
+    console.log(`[GitHub] 缓存保存失败: ${e.message}`);
+  }
+}
+
+// 获取 GitHub 项目 stars（带缓存）
+async function getGitHubStars(owner, repo) {
+  // 1. 先查缓存
+  const cached = await getCachedGitHubStars(owner, repo);
+  if (cached) {
+    return cached;
+  }
+
+  // 2. 缓存未命中，调用 GitHub API
+  try {
+    console.log(`[GitHub] 🌐 请求 API: ${owner}/${repo}`);
     const response = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
       headers: {
         'Accept': 'application/vnd.github.v3+json',
@@ -158,7 +195,7 @@ async function getGitHubStars(owner, repo) {
     }
     
     const data = await response.json();
-    return {
+    const result = {
       stars: data.stargazers_count,
       forks: data.forks_count,
       openIssues: data.open_issues_count,
@@ -170,6 +207,11 @@ async function getGitHubStars(owner, repo) {
       homepage: data.homepage,
       error: null
     };
+
+    // 3. 存入缓存
+    await setCachedGitHubStars(owner, repo, result);
+    
+    return result;
   } catch (error) {
     console.error('获取 GitHub stars 失败:', error);
     return { error: error.message, stars: null };
