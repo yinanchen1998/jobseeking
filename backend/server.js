@@ -786,113 +786,145 @@ async function executeResearchTask(taskId, tool) {
   });
 
   try {
-    const prompt = `请对以下产品进行全面的市场调研分析，生成一份面向公司高层决策的产品调研报告。
+    // 使用行业研究 Skill 框架生成专业调研报告
+    const prompt = `【行业研究专家模式】对以下产品进行专业市场调研分析，生成符合投资/咨询行业标准的调研报告。
 
-产品信息：
+=== 产品基础信息 ===
 - 名称：${tool.name}
 - 中文名：${tool.chineseName || tool.name}
-- 描述：${tool.tagline || ''}
-- 详细描述：${tool.description || ''}
+- 一句话描述：${tool.tagline || ''}
+- 详细介绍：${tool.description || ''}
 - 官网：${tool.website || ''}
-- 类别：${tool.category || '未知'}
-- 来源：${tool.source || 'unknown'}
+- 产品类别：${tool.category || '未知'}
+- 来源类型：${tool.source || 'unknown'}
+${tool.githubStars ? `- GitHub Stars：${tool.githubStars}` : ''}
 
-请返回以下格式的JSON报告：
+=== 分析框架指引 ===
+
+请运用以下专业分析框架：
+
+1. **宏观环境分析 (PEST)**
+   - Political：政策法规对该类产品的影响
+   - Economic：经济环境、消费能力、付费意愿
+   - Social：社会趋势、用户习惯变化、remote work趋势等
+   - Technological：AI技术发展、大模型应用趋势
+
+2. **产业链分析 (价值链)**
+   - 上游：技术提供商、API服务、基础设施
+   - 中游：产品本身的核心价值创造
+   - 下游：用户获取渠道、分发平台
+
+3. **竞争格局分析 (波特五力)**
+   - 行业内现有竞争者的竞争程度
+   - 潜在进入者的威胁
+   - 替代品的威胁
+   - 供应商的议价能力
+   - 购买者的议价能力
+
+4. **SWOT 分析**
+   - S (优势)：产品核心竞争优势
+   - W (劣势)：当前存在的不足
+   - O (机会)：外部市场机会
+   - T (威胁)：外部威胁因素
+
+=== 报告输出格式 ===
+
+返回以下JSON格式的完整报告：
+
 {
-  "summary": "一句话概括这个产品是什么",
-  "founderBackground": "创始人/团队背景，包括关键人物的经历、之前的工作、教育背景等",
-  "problemSolved": ["问题1", "问题2", "问题3"],
-  "userValue": "详细说明用户为什么愿意使用这个产品，解决了什么痛点，带来什么价值",
-  "targetUsers": "详细描述目标用户群体，包括 demographics、职业、需求特征等",
-  "howToUse": ["步骤1：如何开始使用", "步骤2：核心功能使用", "步骤3：进阶用法"],
+  "summary": "执行摘要：100-150字概括产品定位、核心价值和主要结论",
+  
+  "founderBackground": "创始人及团队背景分析（200-300字）：创始人履历、核心团队构成、技术/商业背景评估",
+  
+  "problemSolved": [
+    "问题1：详细描述该问题场景，50-80字",
+    "问题2：用户在此场景下的具体痛点",
+    "问题3：现有解决方案的不足",
+    "问题4：该问题的频率和重要性",
+    "问题5：未被满足的需求点"
+  ],
+  
+  "userValue": "用户价值主张深度分析（200-300字）：核心价值、差异化优势、ROI分析",
+  
+  "targetUsers": "目标用户画像（200-300字）：人口统计、职业特征、行为特征、用户分层",
+  
+  "howToUse": [
+    "步骤1：注册/上手流程，详细说明首次使用体验",
+    "步骤2：核心功能使用路径",
+    "步骤3：高级功能解锁",
+    "步骤4：与其他工具集成",
+    "步骤5：数据导出/迁移"
+  ],
+  
   "useCases": [
     {
-      "title": "案例标题",
-      "scenario": "使用场景描述",
-      "result": "取得的成果"
+      "title": "场景标题",
+      "scenario": "详细场景描述（100-150字）：谁在什么情况下使用",
+      "result": "具体成果和价值（100-150字）：量化收益或定性改善"
     }
   ],
+  
   "commercialization": {
-    "pricingModel": "定价模式说明",
+    "pricingModel": "定价策略分析：免费增值/订阅制/按量付费等",
     "pricingTiers": [
       {
-        "name": "免费版/基础版/高级版",
+        "name": "版本名称",
         "price": "价格",
-        "features": ["功能1", "功能2"]
+        "features": ["核心功能1", "核心功能2"]
       }
     ],
-    "businessModel": "商业模式分析",
-    "revenueEstimate": "收入预估（如果有公开数据）",
-    "fundingStatus": "融资情况"
+    "businessModel": "商业模式深度分析",
+    "revenueEstimate": "收入预估及依据",
+    "fundingStatus": "融资情况、估值、投资方"
   },
+  
   "marketAnalysis": {
-    "marketSize": "目标市场规模估算",
-    "marketGrowth": "市场增长率",
-    "targetMarket": "目标市场细分",
-    "marketTrends": ["趋势1", "趋势2", "趋势3"],
-    "opportunities": ["机会1", "机会2"],
-    "threats": ["威胁1", "威胁2"]
+    "marketSize": "市场规模分析（TAM/SAM/SOM）",
+    "marketGrowth": "市场增长率及驱动因素",
+    "targetMarket": "目标市场细分及选择逻辑",
+    "marketTrends": ["趋势1：技术趋势", "趋势2：用户行为趋势", "趋势3：政策法规趋势"],
+    "opportunities": ["机会1：未被满足的市场需求", "机会2：技术变革带来的新机会"],
+    "threats": ["威胁1：大厂进入的可能性", "威胁2：技术替代风险"]
   },
+  
   "competitiveAnalysis": {
     "directCompetitors": [
       {
         "name": "竞品名称",
-        "description": "竞品描述",
-        "strengths": ["优势1", "优势2"],
-        "weaknesses": ["劣势1", "劣势2"]
+        "description": "竞品定位和产品特点",
+        "strengths": ["核心优势1", "核心优势2"],
+        "weaknesses": ["明显劣势1", "明显劣势2"],
+        "marketShare": "市场份额预估"
       }
     ],
-    "indirectCompetitors": [
-      {
-        "name": "间接竞品名称",
-        "description": "描述",
-        "strengths": ["优势"],
-        "weaknesses": ["劣势"]
-      }
-    ],
-    "competitiveAdvantages": ["优势1", "优势2", "优势3"],
-    "competitiveDisadvantages": ["劣势1", "劣势2"],
-    "marketPosition": "市场地位分析"
+    "indirectCompetitors": [{"name": "间接竞品", "description": "替代方案"}],
+    "competitiveAdvantages": ["优势1：独特价值", "优势2：技术壁垒", "优势3：资源优势"],
+    "competitiveDisadvantages": ["劣势1：相对于竞品的不足", "劣势2：资源短板"],
+    "marketPosition": "市场定位分析"
   },
+  
   "userFeedback": {
-    "satisfactionScore": 8.5,
-    "positivePoints": ["好评点1", "好评点2", "好评点3"],
-    "negativePoints": ["差评点1", "差评点2"],
-    "commonComplaints": ["投诉1", "投诉2"],
-    "userRetention": "用户留存率预估"
+    "satisfactionScore": 8.0,
+    "positivePoints": ["好评点1：具体功能让用户满意", "好评点2：相比竞品的明显优势"],
+    "negativePoints": ["抱怨点1：功能缺陷", "抱怨点2：体验问题"],
+    "commonComplaints": ["常见投诉1：高频问题", "常见投诉2：影响体验的痛点"],
+    "userRetention": "用户留存率分析及原因"
   },
+  
   "strategicAdvice": {
     "viabilityScore": 8,
-    "marketPotential": "市场潜力评估",
-    "recommendation": "对该产品方向的整体建议",
-    "keySuccessFactors": ["成功因素1", "成功因素2", "成功因素3"],
-    "risks": ["风险1", "风险2"],
-    "opportunities": ["机会1", "机会2"]
+    "marketPotential": "市场潜力评估：高增长/稳定增长/红海市场",
+    "recommendation": "战略建议（200-300字）：整体判断、关键成功要素、优先级建议",
+    "keySuccessFactors": ["成功因素1：必须做到什么", "成功因素2：核心竞争力建设", "成功因素3：关键资源"],
+    "risks": ["风险1：技术风险", "风险2：市场风险", "风险3：运营风险"],
+    "opportunities": ["短期机会", "中长期战略机会"]
   }
 }
 
-内容长度指导（确保总字数2000+）：
-- summary: 100-150字的产品概述
-- founderBackground: 200-300字，包括创始人经历和团队构成
-- problemSolved: 5-8个问题点，每个点50-80字详细描述
-- userValue: 200-300字，深入分析用户价值主张
-- targetUsers: 200-300字，详细描述用户画像
-- howToUse: 5-8个步骤，每个步骤详细说明
-- useCases: 3-5个完整案例，每个案例150-200字
-- commercialization: 各字段详细展开，总计300-400字
-- marketAnalysis: 各字段详细展开，总计300-400字
-- competitiveAnalysis: 至少3个直接竞品和2个间接竞品详细分析，总计400-500字
-- userFeedback: 各字段详细展开，基于真实用户评价的合理推断
-- strategicAdvice: 各字段深入分析，总计300-400字
-
-重要要求：
-1. 报告必须详细充实，总字数不少于2000字，每个字段都要充分展开分析
-2. 基于公开信息和行业知识进行合理推断
-3. 对于不确定的信息，标注"预估"或"待验证"
-4. 分析要有深度，体现专业市场调研水准
-5. 面向公司CEO/产品总裁阅读，语言专业但易懂
-6. 必须返回有效的JSON格式
-7. 确保JSON结构完整，所有必填字段都有内容`;
+=== 质量要求 ===
+【字数要求】总字数不少于2000字，各字段充分展开
+【专业标准】使用投资/咨询行业术语，数据要有依据，分析有逻辑链条
+【格式要求】必须返回有效的JSON格式，所有字段必须存在且不为空`;
 
     saveTaskStatus(taskId, {
       status: 'processing',
