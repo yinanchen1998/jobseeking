@@ -952,7 +952,7 @@ ${tool.githubStars ? `- GitHub Stars：${tool.githubStars}` : ''}
             content: prompt
           }
         ],
-        temperature: 0.4,
+        temperature: 1,
         max_tokens: 200000
       })
     });
