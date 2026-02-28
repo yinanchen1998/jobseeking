@@ -11,6 +11,22 @@ export interface ProductResearch {
   
   // 调研内容
   summary: string; // 一句话概括
+  
+  // 【新增】求职阶段定位（学习领导调研框架）
+  jobSearchStage?: JobSearchStage;
+  
+  // 【新增】解决方案深挖（How）
+  solutionHow?: SolutionHow;
+  
+  // 【新增】数据驱动指标
+  dataMetrics?: DataMetrics;
+  
+  // 【新增】竞品对标（国内外）
+  competitiveLandscape?: CompetitiveLandscape;
+  
+  // 【新增】痛点严重程度
+  painPointSeverity?: PainPointSeverity;
+  
   founderBackground: string; // 创始人/团队背景
   problemSolved: string[]; // 解决了什么问题
   userValue: string; // 用户为什么愿意使用
@@ -22,7 +38,7 @@ export interface ProductResearch {
   // 市场分析
   marketAnalysis: MarketAnalysis;
   
-  // 竞争分析
+  // 竞争分析（兼容旧版本）
   competitiveAnalysis: CompetitiveAnalysis;
   
   // 用户评价
@@ -33,6 +49,51 @@ export interface ProductResearch {
   
   // 原始响应
   rawResponse?: string;
+}
+
+// 【新增】求职阶段定位
+export interface JobSearchStage {
+  primaryStage: '准备期' | '前期' | '中期' | '后期' | string;
+  stageDescription: string;
+  painPoint: string;
+}
+
+// 【新增】解决方案深挖（How）
+export interface SolutionHow {
+  coreMechanism: string;
+  keyFeatures: string[];
+  userJourney: string;
+}
+
+// 【新增】数据驱动指标
+export interface DataMetrics {
+  arr: string;
+  userBase: string;
+  growth: string;
+  dataSources: string[];
+}
+
+// 【新增】竞品对标（国内外）
+export interface CompetitiveLandscape {
+  directCompetitors: CompetitorDetail[];
+  differentiation: string;
+  moat: string;
+}
+
+// 【新增】详细竞品信息
+export interface CompetitorDetail {
+  name: string;
+  region: '海外' | '国内' | string;
+  solution: string;
+  metrics: string;
+}
+
+// 【新增】痛点严重程度
+export interface PainPointSeverity {
+  isCorePain: boolean;
+  severityLevel: '高' | '中' | '低';
+  impactDescription: string;
+  frequency: string;
 }
 
 export interface UseCase {
