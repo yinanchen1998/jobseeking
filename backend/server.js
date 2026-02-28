@@ -1515,12 +1515,14 @@ ${JSON.stringify(productsSummary, null, 2)}
             content: prompt
           }
         ],
-        temperature: 0.3
+        temperature: 1
       })
     });
 
     if (!response.ok) {
-      throw new Error('Kimi API 调用失败');
+      const errorText = await response.text();
+      console.error('[Summary] Kimi API 错误:', response.status, errorText);
+      throw new Error(`Kimi API 错误 (${response.status}): ${errorText.substring(0, 200)}`);
     }
 
     const data = await response.json();
@@ -1537,6 +1539,7 @@ ${JSON.stringify(productsSummary, null, 2)}
       summaryData = JSON.parse(cleanedContent);
     } catch (e) {
       console.error('解析汇总报告失败:', e);
+      console.error('原始内容:', content.substring(0, 500));
       return res.status(500).json({ error: '解析失败', raw: content });
     }
     
