@@ -161,11 +161,68 @@ export interface StrategicAdvice {
 export interface ResearchSummary {
   generatedAt: string;
   totalResearched: number;
+  
+  // 【新增】执行摘要
+  executiveSummary?: string;
+  
+  // 【新增】求职阶段分析
+  jobStageAnalysis?: JobStageAnalysis;
+  
+  // 【新增】最大痛点
+  biggestPainPoint?: BiggestPainPoint;
+  
+  // 【新增】国内外对比
+  domesticVsOverseas?: DomesticVsOverseas;
+  
   keyInsights: string[];
   marketTrends: string[];
   hotCategories: CategoryInsight[];
   topProducts: ProductInsight[];
   strategicRecommendations: string[];
+}
+
+// 【新增】求职阶段分析
+export interface JobStageAnalysis {
+  preparation: StageDetail; // 准备期
+  early: StageDetail; // 前期
+  mid: StageDetail; // 中期
+  late: StageDetail; // 后期
+}
+
+export interface StageDetail {
+  stage: string;
+  painPoints: string[];
+  products: StageProduct[];
+  keyInsight: string;
+}
+
+export interface StageProduct {
+  name: string;
+  solution: string;
+  metrics: string;
+}
+
+// 【新增】最大痛点
+export interface BiggestPainPoint {
+  painPoint: string;
+  impactDays: number;
+  description: string;
+  solutions: PainPointSolution[];
+  marketOpportunity: string;
+}
+
+export interface PainPointSolution {
+  product: string;
+  effectiveness: string;
+  metrics: string;
+}
+
+// 【新增】国内外对比
+export interface DomesticVsOverseas {
+  overseasStrengths: string[];
+  domesticStrengths: string[];
+  gapAnalysis: string;
+  opportunity: string;
 }
 
 export interface CategoryInsight {
@@ -174,6 +231,7 @@ export interface CategoryInsight {
   avgSatisfaction: number;
   trend: 'up' | 'down' | 'stable';
   keyInsight: string;
+  topProduct?: string; // 【新增】代表产品
 }
 
 export interface ProductInsight {
@@ -183,4 +241,6 @@ export interface ProductInsight {
   viabilityScore: number;
   marketPotential: string;
   keyStrength: string;
+  stage?: string; // 【新增】求职阶段
+  metrics?: string; // 【新增】数据指标
 }

@@ -1310,49 +1310,137 @@ app.post('/api/research-summary', async (req, res) => {
       return res.status(400).json({ error: '暂无调研报告，请先调研产品' });
     }
     
-    // 构建汇总分析的 prompt
+    // 构建详细的汇总分析数据（包含求职阶段、痛点等维度）
     const productsSummary = researchList.map(r => ({
       name: r.toolChineseName || r.toolName,
       category: r.category,
-      viabilityScore: r.strategicAdvice?.viabilityScore,
-      summary: r.summary
+      summary: r.summary,
+      // 求职阶段定位
+      jobSearchStage: r.jobSearchStage || {
+        primaryStage: '未知',
+        painPoint: r.problemSolved?.[0] || '未知痛点'
+      },
+      // 解决方案深挖
+      solutionHow: r.solutionHow || {
+        coreMechanism: r.userValue || '未知机制',
+        keyFeatures: r.howToUse || []
+      },
+      // 数据指标
+      dataMetrics: r.dataMetrics || {
+        arr: '未知',
+        userBase: '未知',
+        growth: '未知'
+      },
+      // 痛点严重程度
+      painPointSeverity: r.painPointSeverity || {
+        isCorePain: false,
+        severityLevel: '中'
+      },
+      // 可行性分数
+      viabilityScore: r.strategicAdvice?.viabilityScore || 5,
+      marketPotential: r.strategicAdvice?.marketPotential || '未知'
     }));
     
-    const prompt = `请基于以下产品的调研报告，生成一份面向公司高层的战略汇总分析报告：
+    const prompt = `【战略汇总专家模式】基于以下求职AI产品的深度调研报告，生成一份面向公司高层的战略决策报告。
+
+参考分析框架（来自顶级风投调研方法论）：
+1. 按求职阶段分类：准备期→前期→中期→后期
+2. 痛点-解决方案闭环：具体How，不是泛泛而谈
+3. 数据驱动：ARR、用户量、增长数据
+4. 识别最大痛点：对求职周期影响最大的痛点
+5. 国内外市场对比：海外vs国内解决方案差异
 
 已调研产品 (${researchList.length}个)：
 ${JSON.stringify(productsSummary, null, 2)}
 
-请返回以下格式的JSON报告：
+请返回以下格式的JSON战略报告：
+
 {
-  "keyInsights": ["关键洞察1", "关键洞察2", "关键洞察3"],
-  "marketTrends": ["市场趋势1", "市场趋势2"],
+  "executiveSummary": "执行摘要：整体市场判断+核心结论+关键建议（200字）",
+  
+  "jobStageAnalysis": {
+    "preparation": {
+      "stage": "准备期",
+      "painPoints": ["痛点1：具体描述", "痛点2：具体描述"],
+      "products": [{"name": "产品名", "solution": "如何解决", "metrics": "关键数据"}],
+      "keyInsight": "该阶段核心洞察（100字）"
+    },
+    "early": {
+      "stage": "前期",
+      "painPoints": ["简历优化", "薪资谈判", "海投效率"],
+      "products": [{"name": "产品名", "solution": "如何解决", "metrics": "关键数据"}],
+      "keyInsight": "该阶段核心洞察（100字）"
+    },
+    "mid": {
+      "stage": "中期",
+      "painPoints": ["面试准备", "沟通效率", "竞争红海"],
+      "products": [{"name": "产品名", "solution": "如何解决", "metrics": "关键数据"}],
+      "keyInsight": "该阶段核心洞察（100字）"
+    },
+    "late": {
+      "stage": "后期",
+      "painPoints": ["Offer选择", "入职准备"],
+      "products": [],
+      "keyInsight": "该阶段核心洞察（100字）"
+    }
+  },
+  
+  "biggestPainPoint": {
+    "painPoint": "最大痛点名称",
+    "impactDays": 27.5,
+    "description": "为什么这是最大痛点，对求职周期的影响（150字）",
+    "solutions": [{"product": "产品名", "effectiveness": "解决效果", "metrics": "数据支撑"}],
+    "marketOpportunity": "该痛点的市场机会评估（100字）"
+  },
+  
+  "domesticVsOverseas": {
+    "overseasStrengths": ["海外产品优势1", "海外产品优势2"],
+    "domesticStrengths": ["国内产品优势1", "国内产品优势2"],
+    "gapAnalysis": "国内外市场差距分析（150字）",
+    "opportunity": "国内市场机会点（100字）"
+  },
+  
+  "keyInsights": ["关键洞察1：数据支撑", "关键洞察2：数据支撑", "关键洞察3：数据支撑"],
+  
+  "marketTrends": ["趋势1：具体描述+数据", "趋势2：具体描述+数据", "趋势3：具体描述+数据"],
+  
   "hotCategories": [
     {
       "category": "类别名称",
       "productCount": 5,
       "avgSatisfaction": 8.2,
       "trend": "up",
-      "keyInsight": "该类别的关键洞察"
+      "keyInsight": "该类别的关键洞察",
+      "topProduct": "代表产品名"
     }
   ],
+  
   "topProducts": [
     {
       "name": "产品名称",
       "category": "类别",
+      "stage": "求职阶段",
       "viabilityScore": 9,
       "marketPotential": "市场潜力描述",
-      "keyStrength": "核心优势"
+      "keyStrength": "核心优势：具体How（100字）",
+      "metrics": "ARR/用户量/增长数据"
     }
   ],
-  "strategicRecommendations": ["战略建议1", "战略建议2", "战略建议3"]
+  
+  "strategicRecommendations": [
+    "战略建议1：具体可执行的动作",
+    "战略建议2：具体可执行的动作", 
+    "战略建议3：具体可执行的动作"
+  ]
 }
 
 要求：
-1. 提炼最关键的战略信息
-2. 识别市场机会和威胁
-3. 给出可执行的决策建议
-4. 面向CEO/产品总裁阅读`;
+1. 按求职阶段分类展示，清晰呈现各阶段痛点和解决方案
+2. 识别并突出最大痛点（参考影响27.5天的面试准备痛点）
+3. 对比分析国内外产品差异
+4. 每个结论都要有数据支撑
+5. 给出具体可执行的战略建议
+6. 面向CEO/产品总裁阅读，语言专业简洁`;
 
     const response = await fetch(KIMI_API_URL, {
       method: 'POST',
