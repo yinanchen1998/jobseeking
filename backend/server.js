@@ -373,7 +373,7 @@ app.get('/api/test-kimi', async (req, res) => {
         'Authorization': `Bearer ${KIMI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'moonshot-v1-8k',
+        model: 'kimi-k2.5',
         messages: [
           {
             role: 'user',
@@ -567,7 +567,7 @@ app.post('/api/search', async (req, res) => {
         'Authorization': `Bearer ${KIMI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'moonshot-v1-8k',
+        model: 'kimi-k2.5',
         messages: [
           {
             role: 'system',
@@ -909,7 +909,7 @@ async function executeResearchTask(taskId, tool) {
         'Authorization': `Bearer ${KIMI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'moonshot-v1-128k',
+        model: 'kimi-k2.5',
         messages: [
           {
             role: 'system',
@@ -1338,7 +1338,7 @@ ${JSON.stringify(productsSummary, null, 2)}
         'Authorization': `Bearer ${KIMI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'moonshot-v1-128k',
+        model: 'kimi-k2.5',
         messages: [
           {
             role: 'system',
@@ -1562,7 +1562,7 @@ async function findGitHubAlternative(deadTool) {
         'Authorization': `Bearer ${KIMI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'moonshot-v1-8k',
+        model: 'kimi-k2.5',
         messages: [
           {
             role: 'system',
