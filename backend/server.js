@@ -958,7 +958,9 @@ ${tool.githubStars ? `- GitHub Stars：${tool.githubStars}` : ''}
     });
 
     if (!response.ok) {
-      throw new Error('Kimi API 调用失败');
+      const errorData = await response.text();
+      console.error(`[任务 ${taskId}] Kimi API 错误:`, response.status, errorData);
+      throw new Error(`Kimi API 错误 (${response.status}): ${errorData.substring(0, 200)}`);
     }
 
     const data = await response.json();
