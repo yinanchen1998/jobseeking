@@ -883,6 +883,34 @@ ${tool.githubStars ? `- GitHub Stars：${tool.githubStars}` : ''}
   
   "founderBackground": "创始人及团队背景（200字）：关键人物履历、之前的工作、教育背景",
   
+  "targetUsers": "目标用户画像（200-300字）：人口统计、职业特征、行为特征、用户分层",
+  
+  "problemSolved": [
+    "问题1：详细描述该问题场景，50-80字",
+    "问题2：用户在此场景下的具体痛点",
+    "问题3：现有解决方案的不足",
+    "问题4：该问题的频率和重要性",
+    "问题5：未被满足的需求点"
+  ],
+  
+  "userValue": "用户价值主张深度分析（200-300字）：核心价值、差异化优势、ROI分析",
+  
+  "howToUse": [
+    "步骤1：注册/上手流程，详细说明首次使用体验",
+    "步骤2：核心功能使用路径",
+    "步骤3：高级功能解锁",
+    "步骤4：与其他工具集成",
+    "步骤5：数据导出/迁移"
+  ],
+  
+  "useCases": [
+    {
+      "title": "场景标题",
+      "scenario": "详细场景描述（100-150字）：谁在什么情况下使用",
+      "result": "具体成果和价值（100-150字）：量化收益或定性改善"
+    }
+  ],
+  
   "commercialization": {
     "pricingModel": "定价模式：免费增值/订阅/按量付费等",
     "pricingTiers": [{"name": "版本", "price": "价格", "features": ["功能1"]}],
@@ -892,16 +920,43 @@ ${tool.githubStars ? `- GitHub Stars：${tool.githubStars}` : ''}
   
   "marketAnalysis": {
     "marketSize": "TAM/SAM/SOM市场规模",
+    "marketGrowth": "市场增长率及驱动因素",
+    "targetMarket": "目标市场细分及选择逻辑",
     "marketTrends": ["趋势1：如'AI大模型降低简历修改门槛'", "趋势2：如'远程办公改变求职地域限制'"],
-    "opportunities": ["机会1", "机会2"]
+    "opportunities": ["机会1", "机会2"],
+    "threats": ["威胁1", "威胁2"]
+  },
+  
+  "competitiveAnalysis": {
+    "directCompetitors": [
+      {
+        "name": "竞品名称",
+        "description": "竞品定位和产品特点",
+        "strengths": ["核心优势1", "核心优势2"],
+        "weaknesses": ["明显劣势1", "明显劣势2"]
+      }
+    ],
+    "indirectCompetitors": [{"name": "间接竞品", "description": "替代方案"}],
+    "competitiveAdvantages": ["优势1：独特价值", "优势2：技术壁垒", "优势3：资源优势"],
+    "competitiveDisadvantages": ["劣势1：相对于竞品的不足", "劣势2：资源短板"],
+    "marketPosition": "市场定位分析"
+  },
+  
+  "userFeedback": {
+    "satisfactionScore": 8.0,
+    "positivePoints": ["好评点1：具体功能让用户满意", "好评点2：相比竞品的明显优势"],
+    "negativePoints": ["抱怨点1：功能缺陷", "抱怨点2：体验问题"],
+    "commonComplaints": ["常见投诉1：高频问题", "常见投诉2：影响体验的痛点"],
+    "userRetention": "用户留存率分析及原因"
   },
   
   "strategicAdvice": {
     "viabilityScore": 8,
     "marketPotential": "市场潜力：高增长/稳定增长/红海",
+    "recommendation": "战略建议（200-300字）：整体判断、关键成功要素、优先级建议",
     "keySuccessFactors": ["成功因素1", "成功因素2"],
     "risks": ["风险1", "风险2"],
-    "recommendation": "战略建议：产品方向、优先级、关键动作（200字）"
+    "opportunities": ["短期机会", "中长期战略机会"]
   }
 }
 
