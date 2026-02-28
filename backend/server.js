@@ -921,7 +921,7 @@ async function executeResearchTask(taskId, tool) {
           }
         ],
         temperature: 0.4,
-        max_tokens: 120000
+        max_tokens: 200000
       })
     });
 
