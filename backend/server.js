@@ -508,7 +508,7 @@ app.post('/api/update-github-stars', async (req, res) => {
 // Kimi 搜索 API
 app.post('/api/search', async (req, res) => {
   try {
-    const { query, validateLinks = true } = req.body;
+    const { query } = req.body;
     
     if (!query || !query.trim()) {
       return res.status(400).json({ error: '搜索词不能为空' });
@@ -521,80 +521,44 @@ app.post('/api/search', async (req, res) => {
       });
     }
 
-    // 判断搜索类型：产品名 vs 需求词
-    function detectSearchType(query) {
-      const productPatterns = [
-        /[A-Z][a-z]+[A-Z]/,
-        /[a-z]+[A-Z][a-z]+/,
-        /^(ChatGPT|OpenAI|Claude|Midjourney|Notion|Linear|Figma|Canva|Grammarly)/i,
-        /\b(AI|GPT|API|SaaS|App|Bot|Tool|Pro|Max|Plus|Mini)\b/i,
-      ];
-      const needPatterns = [
-        /(简历|求职|面试|工作|招聘|职业规划|技能|提升|优化|生成|制作|准备)/,
-        /(如何|怎么|什么|推荐|有哪些|好用的)/,
-      ];
-      const isProduct = productPatterns.some(p => p.test(query));
-      const isNeed = needPatterns.some(p => p.test(query));
-      if (isProduct && !isNeed) return 'product';
-      if (isNeed && !isProduct) return 'need';
-      if (query.length < 20 && !query.includes(' ')) return 'product';
-      return 'need';
-    }
+    console.log(`[Search] 查询: "${query}"`);
 
-    const searchType = detectSearchType(query);
-    console.log(`[Search] 类型: ${searchType}, 查询: "${query}"`);
+    // 统一的高质量 prompt - 让 Kimi 自己判断搜索类型
+    const prompt = `分析搜索词："${query}"
 
-    let prompt;
-    
-    if (searchType === 'product') {
-      prompt = `搜索特定产品："${query}"
+请判断这是"具体产品名"还是"需求类别描述"，然后给出相应的搜索结果。
 
-请专门搜索这个产品/工具的官方信息，返回该产品的：
-1. 官网链接（必须真实存在）
-2. GitHub仓库链接（如果是开源项目）
-3. 产品的准确英文名称、中文名称
-4. 主要功能和特点描述
+## 判断标准：
+- **产品名**：特定的工具/产品名称（如 Jobright, Resume.io, ChatGPT, Notion, Kimi, Midjourney 等）
+- **需求类别**：描述性的需求（如"简历优化工具"、"面试准备"、"AI求职助手"、"好用的求职网站"等）
 
-只搜索 "${query}" 这个特定产品，不要推荐其他产品。
+## 如果是具体产品名：
+- 专门搜索该产品的官方信息
+- 返回 1-2 个结果（官网优先）
+- 确保信息准确，官网链接真实有效
 
-返回JSON数组格式（1-2个结果，优先官网）：
+## 如果是需求类别：
+- 推荐 3-5 个该类别下的优质求职AI工具
+- 必须包含至少 1 个 GitHub 开源项目
+- 来源多样化（开源+商业产品）
+
+## 统一返回格式（JSON数组）：
 [{
-  "name": "英文名称",
-  "chineseName": "中文名称",
-  "tagline": "一句话描述",
-  "description": "详细功能描述",
-  "category": "类别(resume/interview/career/skill/matching/other)",
-  "website": "官网URL",
-  "source": "来源(producthunt/github/website/app/extension)"
+  "name": "产品英文名（简洁准确）",
+  "chineseName": "产品中文名（自然的中文名称，如无则音译或保持英文）",
+  "tagline": "一句话描述（15字以内，突出核心功能）",
+  "description": "详细介绍（2-3句话，说明主要功能、适用场景、核心优势）",
+  "category": "工具类别，必须是以下之一：resume(简历), interview(面试), career(职业规划), skill(技能提升), matching(职位匹配), other(其他)",
+  "website": "官网URL或GitHub链接（必须真实可访问）",
+  "source": "来源类型，必须是以下之一：github(开源), website(官网), app(应用商店), extension(浏览器插件), producthunt(ProductHunt)"
 }]
 
-要求：
-1. 只返回这个特定产品的信息
-2. 官网链接必须是真实有效的
-3. 优先返回官网，其次GitHub
-4. 只返回JSON数组`;
-    } else {
-      prompt = `搜索词："${query}"
-
-请推荐3-5个与求职相关的AI工具或开源项目，必须包含至少1个GitHub开源项目。
-
-返回JSON数组格式：
-[{
-  "name": "英文名称",
-  "chineseName": "中文名称",
-  "tagline": "一句话描述",
-  "description": "详细描述",
-  "category": "类别(resume/interview/career/skill/matching)",
-  "website": "官网或GitHub链接",
-  "source": "来源(producthunt/github/website/app/extension)"
-}]
-
-要求：
-1. 只返回真实存在的产品
-2. 必须包含GitHub开源项目
-3. 来源多样化
-4. 只返回JSON数组`;
-    }
+## 严格要求：
+1. 只返回真实存在的产品，不要编造
+2. 所有 URL 必须有效（官网优先，GitHub 其次）
+3. 产品名要准确，不要混淆相似产品
+4. 只返回 JSON 数组，不要其他文字说明
+5. 确保 JSON 格式完整正确`;
 
     const response = await fetch(KIMI_API_URL, {
       method: 'POST',
@@ -607,20 +571,21 @@ app.post('/api/search', async (req, res) => {
         messages: [
           {
             role: 'system',
-            content: '你是求职AI工具推荐助手。你熟悉GitHub开源项目、Product Hunt产品、求职类网站和App。你只推荐真实存在的产品，回复简洁，直接返回JSON数组。'
+            content: '你是专业的求职AI工具搜索专家。你熟悉 GitHub 开源项目、Product Hunt 热门产品、各类求职网站和 App。你只推荐真实存在的产品，严格遵循 JSON 格式要求，不要返回任何解释性文字。'
           },
           {
             role: 'user',
             content: prompt
           }
         ],
-        temperature: 0.3
+        temperature: 0.2,
+        max_tokens: 4000
       })
     });
 
     if (!response.ok) {
       const errorData = await response.text();
-      console.error('Kimi API Error:', errorData);
+      console.error('[Search] Kimi API Error:', errorData);
       return res.status(response.status).json({ 
         error: 'Kimi API 调用失败',
         details: errorData
@@ -630,7 +595,7 @@ app.post('/api/search', async (req, res) => {
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content || '';
     
-    console.log('Kimi API Response:', content.substring(0, 300));
+    console.log('[Search] Kimi 响应:', content.substring(0, 200));
     
     // 尝试解析JSON
     let searchResults = [];
@@ -663,37 +628,18 @@ app.post('/api/search', async (req, res) => {
       console.error('Raw content:', content.substring(0, 500));
     }
 
-    // 验证链接（如果启用）- 限制时间避免超时
-    let validatedResults = searchResults;
-    if (validateLinks && searchResults.length > 0) {
-      // 只验证前3个链接，且并行执行
-      const validationPromises = searchResults.slice(0, 3).map(async (tool) => {
-        const validation = await validateUrl(tool.website, 3000); // 3秒超时
-        return {
-          ...tool,
-          linkStatus: {
-            valid: validation.valid,
-            status: validation.status,
-            checked: true
-          }
-        };
-      });
-      
-      const validated = await Promise.all(validationPromises);
-      // 合并未验证的结果
-      validatedResults = [
-        ...validated,
-        ...searchResults.slice(3).map(tool => ({
-          ...tool,
-          linkStatus: { valid: false, status: null, checked: false }
-        }))
-      ];
-    }
+    // 补充 slug 字段（如果缺失）
+    const enrichedResults = searchResults.map(tool => ({
+      ...tool,
+      slug: tool.slug || tool.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    }));
+
+    console.log(`[Search] 返回 ${enrichedResults.length} 个结果`);
 
     res.json({
       query,
-      results: validatedResults,
-      raw: content
+      count: enrichedResults.length,
+      results: enrichedResults
     });
 
   } catch (error) {
