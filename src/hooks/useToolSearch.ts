@@ -213,6 +213,8 @@ export function useToolSearch() {
         tool.website !== '#'
       );
       
+      console.log(`[Search] Kimi返回 ${kimiResults.length} 个，过滤后 ${newKimiResults.length} 个新工具`);
+      
       // 3. 显示结果对话框（无论是否有新工具都显示）
       setState(prev => ({
         ...prev,
@@ -220,15 +222,16 @@ export function useToolSearch() {
         kimiResults: newKimiResults,
         results: [...newKimiResults, ...localResults],
         showResultsDialog: true,
-        searchQuery: query
+        searchQuery: query,
+        isSearching: false
       }));
     } catch (error) {
+      console.error('[Search] 搜索出错:', error);
       setState(prev => ({
         ...prev,
-        error: error instanceof Error ? error.message : '搜索出错'
+        error: error instanceof Error ? error.message : '搜索出错',
+        isSearching: false
       }));
-    } finally {
-      setState(prev => ({ ...prev, isSearching: false }));
     }
   }, [searchLocal, searchKimi]);
 
