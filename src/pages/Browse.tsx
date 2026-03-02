@@ -10,6 +10,7 @@ import { mockTools, categoryLabels, sourceLabels } from '@/data/mockData';
 import { useToolSearch } from '@/hooks/useToolSearch';
 import { useGitHubStars } from '@/hooks/useGitHubStars';
 import { ResearchReport } from '@/components/ResearchReport';
+import { SearchResultsDialog } from '@/components/SearchResultsDialog';
 import type { AITool, ToolCategory, SortOption } from '@/types';
 
 const Browse = () => {
@@ -32,7 +33,10 @@ const Browse = () => {
     error,
     hasSearched,
     discoveredCount,
-    discoveredToolsList
+    discoveredToolsList,
+    showResultsDialog,
+    closeResultsDialog,
+    saveSelectedTools
   } = useToolSearch();
 
   // 当 URL 参数变化时触发搜索
@@ -441,6 +445,15 @@ const Browse = () => {
           </div>
         </div>
       </div>
+
+      {/* 搜索结果确认弹窗 */}
+      <SearchResultsDialog
+        isOpen={showResultsDialog}
+        onClose={closeResultsDialog}
+        tools={kimiResults}
+        onSave={saveSelectedTools}
+        isSaving={isSaving}
+      />
     </div>
   );
 };

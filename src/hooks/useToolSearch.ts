@@ -13,6 +13,8 @@ interface SearchState {
   hasSearched: boolean;
   discoveredCount: number;
   discoveredToolsList: DiscoveredTool[];
+  showResultsDialog: boolean;
+  searchQuery: string;
 }
 
 interface DiscoveredTool extends AITool {
@@ -35,7 +37,9 @@ export function useToolSearch() {
     error: null,
     hasSearched: false,
     discoveredCount: 0,
-    discoveredToolsList: []
+    discoveredToolsList: [],
+    showResultsDialog: false,
+    searchQuery: ''
   });
 
   // 加载已发现的工具数量
@@ -80,22 +84,29 @@ export function useToolSearch() {
     }
   }, []);
 
-  // Kimi AI 搜索
+  // Kimi AI 搜索（带30秒超时）
   const searchKimi = useCallback(async (query: string): Promise<DiscoveredTool[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/search`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, validateLinks: true })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || errorData.error || 'Kimi 搜索失败');
-    }
-
-    const data = await response.json();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
     
-    if (data.results && Array.isArray(data.results)) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, validateLinks: true }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || errorData.error || 'Kimi 搜索失败');
+      }
+
+      const data = await response.json();
+      
+      if (data.results && Array.isArray(data.results)) {
       return data.results.map((item: any, index: number) => ({
         id: `kimi-${Date.now()}-${index}`,
         slug: item.name?.toLowerCase().replace(/\s+/g, '-') || `search-result-${index}`,
@@ -130,6 +141,14 @@ export function useToolSearch() {
     }
     
     return [];
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.error('Kimi 搜索超时（30秒）');
+        throw new Error('搜索超时，请稍后重试');
+      }
+      throw error;
+    }
   }, []);
 
   // 保存新发现的工具
@@ -202,20 +221,15 @@ export function useToolSearch() {
         tool.website !== '#'
       );
       
-      // 3. 合并结果：Kimi 新发现的 + 本地已有的
-      const allResults = [...newKimiResults, ...localResults];
-      
+      // 3. 显示结果对话框（无论是否有新工具都显示）
       setState(prev => ({
         ...prev,
         localResults,
         kimiResults: newKimiResults,
-        results: allResults
+        results: [...newKimiResults, ...localResults],
+        showResultsDialog: true,
+        searchQuery: query
       }));
-
-      // 4. 保存新发现的工具到后端
-      if (newKimiResults.length > 0) {
-        await saveTools(newKimiResults, query);
-      }
     } catch (error) {
       setState(prev => ({
         ...prev,
@@ -224,7 +238,28 @@ export function useToolSearch() {
     } finally {
       setState(prev => ({ ...prev, isSearching: false }));
     }
-  }, [searchLocal, searchKimi, saveTools]);
+  }, [searchLocal, searchKimi]);
+
+  // 关闭结果对话框
+  const closeResultsDialog = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      showResultsDialog: false,
+      kimiResults: [],
+      results: []
+    }));
+  }, []);
+
+  // 保存选中的工具（手动选择）
+  const saveSelectedTools = useCallback(async (selectedTools: DiscoveredTool[]) => {
+    if (selectedTools.length === 0) {
+      closeResultsDialog();
+      return;
+    }
+    
+    await saveTools(selectedTools, state.searchQuery);
+    closeResultsDialog();
+  }, [saveTools, state.searchQuery, closeResultsDialog]);
 
   // 清除搜索
   const clear = useCallback(() => {
@@ -237,13 +272,17 @@ export function useToolSearch() {
       error: null,
       hasSearched: false,
       discoveredCount: prev.discoveredCount,
-      discoveredToolsList: prev.discoveredToolsList
+      discoveredToolsList: prev.discoveredToolsList,
+      showResultsDialog: false,
+      searchQuery: ''
     }));
   }, []);
 
   return {
     ...state,
     search,
-    clear
+    clear,
+    closeResultsDialog,
+    saveSelectedTools
   };
 }
