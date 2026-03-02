@@ -153,12 +153,15 @@ export function useToolSearch() {
       const data = await response.json();
       console.log(`✅ 已保存 ${data.added} 个新工具，库中共有 ${data.total} 个`);
       
-      // 保存成功后，重新加载发现库数量
+      // 保存成功后，重新加载发现库数量，并清空搜索结果（避免与发现库重复）
       await loadDiscoveredCount();
       
       setState(prev => ({
         ...prev,
-        isSaving: false
+        isSaving: false,
+        // 清空搜索结果，让新工具从 discoveredToolsList 显示
+        results: [],
+        kimiResults: []
       }));
     } catch (error) {
       console.error('保存工具失败:', error);
