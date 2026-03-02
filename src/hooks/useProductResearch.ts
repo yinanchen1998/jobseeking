@@ -232,7 +232,7 @@ export function useProductResearch() {
       }
 
       const data = await response.json();
-      return data.research || data.summary;
+      return data.research;
     } catch (error) {
       console.error('生成汇总报告失败:', error);
       return null;

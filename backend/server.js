@@ -1555,7 +1555,7 @@ ${JSON.stringify(productsSummary, null, 2)}
     
     res.json({
       success: true,
-      summary
+      research: summary
     });
     
   } catch (error) {
