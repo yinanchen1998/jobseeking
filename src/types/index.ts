@@ -18,8 +18,19 @@ export interface AITool {
   createdAt: string;
   updatedAt: string;
   publishedAt?: string;
-  source: 'producthunt' | 'github' | 'twitter' | 'manual';
+  source: 'producthunt' | 'github' | 'twitter' | 'manual' | 'website' | 'app' | 'extension' | 'kimi';
   sourceUrl?: string;
+  linkStatus?: {
+    valid: boolean;
+    status: number | null;
+    checked: boolean;
+  };
+}
+
+// 通过搜索发现的工具（扩展 AITool）
+export interface DiscoveredTool extends AITool {
+  discoveredAt?: string;
+  discoveredFrom?: string;
 }
 
 export interface ToolContent {

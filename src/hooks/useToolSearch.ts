@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { AITool } from '@/types';
+import type { AITool, DiscoveredTool } from '@/types';
 
 import { API_BASE_URL } from '@/config/api';
 
@@ -17,15 +17,7 @@ interface SearchState {
   searchQuery: string;
 }
 
-interface DiscoveredTool extends AITool {
-  discoveredAt?: string;
-  discoveredFrom?: string;
-  linkStatus?: {
-    valid: boolean;
-    status: number | null;
-    checked: boolean;
-  };
-}
+
 
 export function useToolSearch() {
   const [state, setState] = useState<SearchState>({
