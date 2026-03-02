@@ -87,7 +87,7 @@ export function useToolSearch() {
   // Kimi AI 搜索（带30秒超时）
   const searchKimi = useCallback(async (query: string): Promise<DiscoveredTool[]> => {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+    const timeoutId = setTimeout(() => controller.abort(), 300000); // 5分钟超时
     
     try {
       const response = await fetch(`${API_BASE_URL}/api/search`, {
@@ -144,8 +144,8 @@ export function useToolSearch() {
     } catch (error) {
       clearTimeout(timeoutId);
       if (error instanceof Error && error.name === 'AbortError') {
-        console.error('Kimi 搜索超时（30秒）');
-        throw new Error('搜索超时，请稍后重试');
+        console.error('Kimi 搜索超时（5分钟）');
+        throw new Error('搜索超时（5分钟），请稍后重试');
       }
       throw error;
     }
