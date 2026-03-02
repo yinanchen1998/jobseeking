@@ -380,7 +380,7 @@ app.get('/api/test-kimi', async (req, res) => {
             content: '你好，请回复"Kimi API 连接成功"'
           }
         ],
-        temperature: 0.3
+        temperature: 1
       })
     });
 
@@ -578,7 +578,7 @@ app.post('/api/search', async (req, res) => {
             content: prompt
           }
         ],
-        temperature: 0.2,
+        temperature: 1,
         max_tokens: 4000
       })
     });
@@ -1763,7 +1763,7 @@ async function findGitHubAlternative(deadTool) {
             content: prompt
           }
         ],
-        temperature: 0.3
+        temperature: 1
       })
     });
 
