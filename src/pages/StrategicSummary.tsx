@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { 
   TrendingUp, Lightbulb, Target, CheckCircle, Loader2, RefreshCw,
-  MapPin, Clock, Globe, Zap, BarChart3, Users
+  MapPin, Globe, Zap, BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useProductResearch } from '@/hooks/useProductResearch';
-import type { ResearchSummary, StageDetail, BiggestPainPoint } from '@/types/research';
+import type { ResearchSummary, StageDetail } from '@/types/research';
 
 // 阶段颜色配置
 const stageColors = {
