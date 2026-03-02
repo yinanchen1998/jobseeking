@@ -89,6 +89,9 @@ export default function StrategicSummary() {
     );
   }
 
+  // 检查是否包含新格式的数据
+  const hasNewFormat = summary.jobStageAnalysis && summary.biggestPainPoint;
+
   return (
     <div className="min-h-screen bg-gray-50 pt-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -114,9 +117,25 @@ export default function StrategicSummary() {
               ) : (
                 <RefreshCw className="w-4 h-4 mr-2" />
               )}
-              更新报告
+              {hasNewFormat ? '更新报告' : '重新生成（获取新格式）'}
             </Button>
           </div>
+          
+          {/* 提示重新生成 */}
+          {!hasNewFormat && (
+            <Card className="mt-4 bg-amber-50 border-amber-200">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-start gap-3">
+                  <Lightbulb className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-amber-800 text-sm">
+                      <span className="font-semibold">提示：</span>当前报告为旧格式，点击"重新生成"可获取包含求职阶段分析、最大痛点识别等新内容的完整报告。
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           
           {/* Executive Summary */}
           {summary.executiveSummary && (
@@ -245,6 +264,28 @@ export default function StrategicSummary() {
           </Card>
         )}
 
+        {/* 关键洞察 */}
+        <Card className="mb-8 bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-900">
+              <Lightbulb className="w-6 h-6" />
+              关键洞察
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {summary.keyInsights?.map((insight, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center flex-shrink-0 text-sm font-medium">
+                    {i + 1}
+                  </div>
+                  <p className="text-blue-800 text-lg">{insight}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 市场趋势 */}
         <Card className="mb-8">
           <CardHeader>
@@ -264,6 +305,93 @@ export default function StrategicSummary() {
             </ul>
           </CardContent>
         </Card>
+
+        {/* 热门类别分析 */}
+        {summary.hotCategories && summary.hotCategories.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>热门类别分析</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {summary.hotCategories.map((category, i) => (
+                  <div key={i} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-semibold">{category.category}</h4>
+                      <Badge className={
+                        category.trend === 'up' ? 'bg-green-100 text-green-700' :
+                        category.trend === 'down' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }>
+                        {category.trend === 'up' ? '↑ 上升' :
+                         category.trend === 'down' ? '↓ 下降' : '→ 稳定'}
+                      </Badge>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm mb-2">
+                      <div>
+                        <span className="text-gray-500">产品数：</span>
+                        <span className="font-medium">{category.productCount}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">满意度：</span>
+                        <span className="font-medium">{category.avgSatisfaction}/10</span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600">{category.keyInsight}</p>
+                    {category.topProduct && (
+                      <div className="mt-2 text-xs text-gray-500">
+                        代表产品：{category.topProduct}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* 重点关注产品 */}
+        {summary.topProducts && summary.topProducts.length > 0 && (
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>重点关注产品</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {summary.topProducts.map((product, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-[#7e43ff] text-white flex items-center justify-center font-bold">
+                      {i + 1}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold text-lg">{product.name}</h4>
+                        <Badge variant="secondary">{product.category}</Badge>
+                        {product.stage && (
+                          <Badge variant="outline" className="text-xs">{product.stage}</Badge>
+                        )}
+                      </div>
+                      <p className="text-gray-600 text-sm">{product.keyStrength}</p>
+                      {product.metrics && (
+                        <p className="text-gray-500 text-xs mt-1">{product.metrics}</p>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <Badge className={
+                        product.viabilityScore >= 8 ? 'bg-green-100 text-green-700' :
+                        product.viabilityScore >= 6 ? 'bg-yellow-100 text-yellow-700' :
+                        'bg-orange-100 text-orange-700'
+                      }>
+                        可行性: {product.viabilityScore}/10
+                      </Badge>
+                      <p className="text-sm text-gray-500 mt-1">{product.marketPotential}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* 战略建议 */}
         <Card>
