@@ -1564,6 +1564,27 @@ ${JSON.stringify(productsSummary, null, 2)}
   }
 });
 
+// 获取调研汇总报告
+app.get('/api/research/summary', (req, res) => {
+  try {
+    const summaryPath = path.join(RESEARCH_DIR, 'summary.json');
+    if (!fs.existsSync(summaryPath)) {
+      return res.status(404).json({ error: '暂无汇总报告' });
+    }
+    
+    const summaryData = fs.readFileSync(summaryPath, 'utf-8');
+    const summary = JSON.parse(summaryData);
+    
+    res.json({
+      success: true,
+      research: summary
+    });
+  } catch (error) {
+    console.error('获取汇总报告失败:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // 本地搜索（优先）
 app.post('/api/local-search', (req, res) => {
   const { query } = req.body;
